@@ -1,23 +1,24 @@
 # Word Finder — Developer Challenge Solution
 
-> ## 🫶🏼 Dev notes
-> -- **Analyze** My first step was to analyze the challenge using four different models (Claude Sonnet, Gemini 3.6 flash, GLM 4.7, GPT luna) to understand the problem and explore some potential solutions. You can find the analysis in the **“01 - Analysis"** folder
-> -- **PoCs phase** Based on that analysis, I requested a comparison of the pros and cons in light of the initial challenge and created some proof-of-concepts to evaluate the performance of 4 different approaches, since performance is one of the challenge’s priorities. These can be found in the **“02 - PoCs”** folder.
-> -- **Delivery phase**, based on the best option previusly benchmarked a deliverable was created, taking into account the constraints proposed in the challenge, along with its tests and benchmarks.
+## 🫶🏼 Dev notes
 
-> Key files:
-- [`Benchmark Report`](BenchmarkDotNet-report.html) 
-- [`Test Coverage Report`](coverage.cobertura.xml) 
-- [`Tradeoffs commparsion of AI analasys`](02 - PoCs\zero-prompt.txt) 
-- [`👇🏼Nice and lovely readme down below👇🏼`](README.md) 
----
+- **Analyze**: My first step was to analyze the challenge using four different models (Claude Sonnet, Gemini 3.6 flash, GLM 4.7, GPT luna) to understand the problem and explore some potential solutions. You can find the analysis in the **"01 - Analysis"** folder
+- **PoCs phase**: Based on that analysis, I requested a comparison of the pros and cons in light of the initial challenge and created some proof-of-concepts to evaluate the performance of 4 different approaches, since performance is one of the challenge's priorities. These can be found in the **"02 - PoCs"** folder.
+- **Delivery phase**: Based on the best option previously benchmarked, a deliverable was created, taking into account the constraints proposed in the challenge, along with its tests and benchmarks.
 
-> **Main challenge**: Given a 64x64 character matrix and a large word stream, find the top 10 most frequent words from the stream that exist in the matrix (horizontally left-to-right or vertically top-to-bottom).
-> **Rules and contraints**: 
+**Key files**:
+- [`Benchmark Report`](BenchmarkDotNet-report.html)
+- [`Test Coverage Report`](coverage.cobertura.xml)
+- [`Tradeoffs comparison of AI analysis`](02 - PoCs\zero-prompt.txt)
+- [`👇🏼 Nice and lovely readme down below 👇🏼`](README.md)
 
 ---
+
+**Main challenge**: Given a 64x64 character matrix and a large word stream, find the top 10 most frequent words from the stream that exist in the matrix (horizontally left-to-right or vertically top-to-bottom).
+
 ---
-👇🏼 From here start the IA generated readme file...👇🏼
+
+👇🏼 From here start the AI generated readme file... 👇🏼
 
 ## Results
 
