@@ -7,9 +7,10 @@
 - **Delivery phase**: Based on the best option previously benchmarked, a deliverable was created, taking into account the constraints proposed in the challenge, along with its tests and benchmarks.
 
 **Key files**:
-- [`Benchmark Report`](BenchmarkDotNet-report.html)
+- [`Tradeoffs comparison of AI analysis and clarify rules and contraints to follow`](02 - PoCs/zero-prompt.txt)
+- [`Acceptance Criteria to build the delivery`](Acceptance_Criteria.md)
+- [`Benchmark Report`](BenchmarkDotNet-report.md)
 - [`Test Coverage Report`](coverage.cobertura.xml)
-- [`Tradeoffs comparison of AI analysis`](02 - PoCs\zero-prompt.txt)
 - [`👇🏼 Nice and lovely readme down below 👇🏼`](README.md)
 
 ---
