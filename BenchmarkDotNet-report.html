@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset='utf-8' />
+<title>WordFinder.Benchmarks.WordFinderBenchmarks-20260813-235012</title>
+
+<style type="text/css">
+	table { border-collapse: collapse; display: block; width: 100%; overflow: auto; }
+	td, th { padding: 6px 13px; border: 1px solid #ddd; text-align: right; }
+	tr { background-color: #fff; border-top: 1px solid #ccc; }
+	tr:nth-child(even) { background: #f8f8f8; }
+</style>
+</head>
+<body>
+<pre><code>
+BenchmarkDotNet v0.15.8, Windows 11 (10.0.26200.8875/25H2/2025Update/HudsonValley2)
+AMD Ryzen 7 7730U with Radeon Graphics 2.00GHz, 1 CPU, 16 logical and 8 physical cores
+.NET SDK 10.0.303
+  [Host]     : .NET 10.0.11 (10.0.11, 10.0.1126.37416), X64 RyuJIT x86-64-v3
+  DefaultJob : .NET 10.0.11 (10.0.11, 10.0.1126.37416), X64 RyuJIT x86-64-v3
+</code></pre>
+<pre><code></code></pre>
+
+<table>
+<thead><tr><th>Method                       </th><th>Mean    </th><th>Error   </th><th>StdDev </th><th>Median  </th><th>Rank</th><th>Gen0</th><th>Gen1</th><th>Gen2</th><th>Allocated</th>
+</tr>
+</thead><tbody><tr><td>&#39;Aggregator: MinHeap PriorityQueue&#39;</td><td>4.830 &mu;s</td><td>0.3920 &mu;s</td><td>1.156 &mu;s</td><td>4.270 &mu;s</td><td>1</td><td>0.1450</td><td>-</td><td>-</td><td>1.21 KB</td>
+</tr><tr><td>&#39;Find(10K): FrozenSet Default&#39;</td><td>366.573 &mu;s</td><td>29.3498 &mu;s</td><td>85.149 &mu;s</td><td>330.506 &mu;s</td><td>2</td><td>-</td><td>-</td><td>-</td><td>4.04 KB</td>
+</tr><tr><td>&#39;Find(100K): FrozenSet Default&#39;</td><td>3,795.319 &mu;s</td><td>168.9179 &mu;s</td><td>492.742 &mu;s</td><td>3,755.808 &mu;s</td><td>3</td><td>-</td><td>-</td><td>-</td><td>4.04 KB</td>
+</tr><tr><td>&#39;Ctor: FrozenSet (.NET 8+)&#39;</td><td>150,498.961 &mu;s</td><td>10,336.1482 &mu;s</td><td>29,656.349 &mu;s</td><td>143,408.567 &mu;s</td><td>4</td><td>3500.0000</td><td>3333.3333</td><td>1333.3333</td><td>53681.03 KB</td>
+</tr></tbody></table>
+</body>
+</html>

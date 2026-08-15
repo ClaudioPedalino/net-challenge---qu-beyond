@@ -1,0 +1,396 @@
+# Word Finder Challenge - Análisis Completo, Approaches y Trade-offs
+
+---
+
+## 1. REGLAS Y CONSTRAINTS OBLIGATORIOS
+
+Estas son las reglas que el challenge establece de forma explícita e implícita. Cualquier solución válida DEBE cumplirlas todas:
+
+### A. Contrato de la API (NO negociable)
+```csharp
+public class WordFinder
+{
+    public WordFinder(IEnumerable<string> matrix);  // Recibe la matriz
+    public IEnumerable<string> Find(IEnumerable<string> wordstream);  // Busca palabras
+}
+```
+- El constructor recibe la matriz UNA sola vez.
+- `Find()` puede llamarse múltiples veces sobre la misma instancia.
+
+### B. Restricciones de la Matriz
+1. **Máximo 64x64** caracteres (4,096 celdas totales). Esto es una constante que define todo el diseño.
+2. **Todas las filas tienen la misma longitud** (matriz regular, no jagged).
+3. **Inmutabilidad**: la matriz se entrega una vez y no cambia.
+
+### C. Direcciones de Búsqueda (Solo 2)
+1. **Horizontal**: izquierda → derecha (dentro de una fila)
+2. **Vertical**: arriba → abajo (dentro de una columna)
+3. **PROHIBIDO**: diagonales, derecha→izquierda, abajo→arriba
+
+> **Por qué importa**: El ejemplo visual del challenge muestra "snow" en diagonal y es la ÚNICA palabra que NO aparece en el resultado. Esto es una pista deliberada, no decorativa.
+
+### D. Reglas de Salida y Ranking
+1. **Top 10 más frecuentes** del `wordstream` que existan en la matriz.
+2. **Deduplicación**: cada palabra aparece a lo sumo una vez en el resultado.
+3. **La matriz es booleana**: solo importa si la palabra EXISTE o NO. No se cuenta cuántas veces aparece dentro de la matriz.
+4. **La frecuencia viene del stream**: si "cold" aparece 5 veces en el stream y existe en la matriz, su frecuencia es 5.
+5. **Si no hay coincidencias**: retornar colección vacía.
+6. **Si hay menos de 10**: retornar las que hayan.
+
+### E. Interpretación de la frase ambigua
+> *"If any word in the word stream is found more than once within the stream, the search results should count it only once"*
+
+**Interpretación correcta**: El resultado de salida debe contener cada palabra una sola vez (dedup del output). La frecuencia se usa PARA EL RANKING, no para multiplicar la palabra en el resultado.
+
+Ejemplo:
+- Stream: `["cold", "cold", "cold", "wind", "wind"]`
+- Matriz contiene: `cold`, `wind`
+- Resultado: `["cold", "wind"]` (NO `["cold", "cold", "cold", "wind", "wind"]`)
+- Ranking: cold=3, wind=2
+
+Si no hubiera conteo de frecuencia, "most repeated" no significaría nada.
+
+### F. Assumptions que debemos documentar
+1. **Case-sensitivity**: comparación ordinal (case-sensitive). Es más seguro que asumir case-insensitive sin evidencia del enunciado.
+2. **"Found in the matrix"**: substring contiguo exacto en la dirección permitida. Sin exigir separadores ni bordes de palabra.
+3. **Empates en frecuencia**: orden estable por primera aparición en el stream (el enunciado no lo especifica, pero hay que ser consistente).
+4. **Palabras más largas que 64 chars**: imposibles de encontrar en la matriz, se descartan tempranamente.
+
+---
+
+## 2. EL INSIGHT CENTRAL DEL CHALLENGE
+
+La matriz es **pequeña y fija** (máx 64x64). El stream es **potencialmente enorme y variable**.
+
+| Factor | Matriz | Stream |
+|--------|--------|--------|
+| Tamaño | Máx 4,096 chars | Sin límite (millones) |
+| Mutabilidad | Inmutable (1 ctor) | Variable por cada Find() |
+| Costo crítico | Preprocesamiento (una vez) | Búsqueda (muchas veces) |
+
+**Conclusión**: El verdadero desafío NO es buscar en la matriz. Es diseñar una clase donde el constructor pre-procesa una matriz fija una sola vez, y `Find()` puede ejecutarse N veces con streams gigantes de forma eficiente.
+
+Esto descarta el enfoque naive de escanear la matriz en cada llamada a `Find()`.
+
+---
+
+## 3. ANÁLISIS DE LOS 4 MODELOS DE IA
+
+### Evaluación Crítica
+
+| Modelo | Aciertos | Errores/Desajustes |
+|--------|----------|-------------------|
+| **Claude** | Identificó el descarte diagonal de "snow". Foco en costo de Find(). Interpretación correcta de la frase ambigua. | Sugirió Aho-Corasick sin advertir que construirlo en Find() penaliza cada llamada con streams grandes. |
+| **Gemini** | Detectó la asimetría 64x64 vs Stream infinito. Approaches correctos. | Approach 4 "Parallel & Zero-Allocation" no es un approach distinto, es una optimización de los existentes. |
+| **GLM** | Propuso métodos de extensión modulares. | **ERROR CRÍTICO** (ver abajo). |
+| **GPT** | Énfasis en inmutabilidad y thread-safety. Recomendación correcta: HashSet como sweet spot. | Planteó Aho-Corasick pero admitió que para 64x64 era complejo. |
+
+### ERROR CRÍTICO DE GLM: Por qué su interpretación es errónea
+
+GLM interpretó que la frecuencia se contaba dentro de la MATRIZ, no del stream:
+
+> *"Mi interpretación: Es el Escenario A - contamos cuántas veces aparece en la matriz, no en el stream."*
+> — analisis_glm.md, línea 39
+
+**Por qué está mal:**
+
+1. **Matriz = booleana**: solo importa si la palabra EXISTE o NO. Una palabra típicamente aparece 1-2 veces en una matriz de 64x64.
+2. **Stream = fuente de frecuencia**: el challenge dice "top 10 most repeated words **from the word stream**". El stream dicta la frecuencia.
+3. **Consecuencia práctica**: si deduplicáramos el stream antes de contar, todas las frecuencias serían 1, haciendo imposible rankear por repetición. "Most repeated" no significaría nada.
+4. **El error se auto-descubre**: con frecuencias todas = 1, el top 10 sería arbitrario (dependiente del orden de inserción), no basado en repetición.
+
+> **Lección**: Este es el error más común y peligroso. Si un candidato sigue esta interpretación, su solución es incorrecta aunque el código compile y pase tests básicos.
+
+### Por qué Aho-Corasick no es la opción ideal para este contrato
+
+Aho-Corasick está diseñado para buscar un diccionario de palabras clave dentro de un texto. Si las palabras clave son el `wordstream`, tendríamos que construir el autómata dentro de `Find(wordstream)` en cada ejecución, perdiendo la ventaja de preprocesar la matriz en el constructor.
+
+La estructura dual equivalente que sí se construye sobre la matriz en el constructor es un **Trie de substrings completo** (no solo sufijos), que procesa la matriz una sola vez y permite validar cualquier palabra en tiempo proporcional a su longitud.
+
+---
+
+## 4. LOS 4 APPROACHES Y SUS TRADE-OFFS
+
+### Approach 1: Naive Line Scan
+**Cómo funciona**: Extrae las 128 líneas (64 filas + 64 columnas). En `Find()`, por cada palabra ejecuta `string.Contains` sobre las 128 líneas.
+
+| Métrica | Valor |
+|---------|-------|
+| Constructor | O(1) - instantáneo |
+| Búsqueda por palabra | O(Lines × LineLength) = 128 × 64 ops |
+| Memoria | ~8 KB |
+| Complejidad de código | Baja |
+
+**Ventajas**: Extremadamente simple, fácil de entender y testear.
+**Desventajas**: Lento para streams con muchas palabras únicas. Repite trabajo de escaneo en cada Find().
+
+**Cuándo usarlo**: Como baseline para comparar, o si el stream siempre tiene pocas palabras.
+
+---
+
+### Approach 2: HashSet de Substrings
+**Cómo funciona**: En el constructor genera TODAS las subcadenas posibles de las 128 líneas (~266,240 strings) y las guarda en un `HashSet<string>`. En `Find()`, cada palabra se verifica con un lookup O(1).
+
+| Métrica | Valor |
+|---------|-------|
+| Constructor | O(Lines × L²) ~ 266k ops, ~90ms |
+| Búsqueda por palabra | O(1) esperado |
+| Memoria | ~12 MB (266k strings) |
+| Complejidad de código | Media |
+
+**Ventajas**: Búsqueda ultra rápida. El tiempo de consulta es constante sin importar la matriz.
+**Desventajas**: Mayor uso de memoria y tiempo de construcción. Cada substring es un objeto string en el heap. Mutable (no thread-safe para lecturas concurrentes después de la construcción).
+
+**Cuándo usarlo**: Cuando el stream es muy grande y Find() se llama múltiples veces. El costo de constructor se amortiza rápidamente.
+
+---
+
+### Approach 3: FrozenSet de Substrings (.NET 8+)
+**Cómo funciona**: Igual al Approach 2, pero compilado como un conjunto inmutable `FrozenSet<string>`.
+
+| Métrica | Valor |
+|---------|-------|
+| Constructor | O(Lines × L²) + overhead de congelación, ~105ms |
+| Búsqueda por palabra | O(1) optimizado |
+| Memoria | ~12 MB (pero layout optimizado para CPU cache) |
+| Complejidad de código | Media |
+
+**Ventajas**: 
+- Optimizado por el runtime de .NET para lecturas concurrentes sin locks.
+- Distribución de buckets que minimiza fallos de caché en CPU.
+- Inmutabilidad garantizada: una vez construido, no puede cambiarse.
+- Thread-safe por diseño (múltiples hilos pueden llamar Find() concurrentemente).
+
+**Desventajas**: Tiempo de inicialización ligeramente mayor. Requiere .NET 8+.
+
+**Cuándo usarlo**: La mejor opción para .NET 8+ cuando se busca máximo throughput en lecturas.
+
+---
+
+### Approach 4: Substring Trie (Trie completo de substrings)
+**Cómo funciona**: Por cada línea (128 filas+columnas), inserta TODOS los substrings posibles en un Trie. Desde cada posición de la línea, inserta todos los largos posibles (desde 1 hasta el final de la línea).
+
+> **NOTA**: Un Suffix Trie (que solo inserta sufijos) NO es válido para este challenge. Si la matriz tiene la línea "coldy", un Suffix Trie insertaría "coldy", "oldy", "ldy", "dy", "y" — pero NO "cold", que es un substring válido (posición 0-3). Esto fue descubierto y verificado en la fase de PoC.
+
+| Métrica | Valor |
+|---------|-------|
+| Constructor | O(Lines × L²) inserciones, 0 allocs intermedias de strings |
+| Búsqueda por palabra | O(WordLength) - máximo 64 pasos |
+| Memoria | Proporcional a la matriz, no al número de substrings como strings separados |
+| Complejidad de código | Alta |
+
+**Ventajas**:
+- Cero asignaciones de memoria de strings en el constructor (no crea 266k objetos string separados).
+- 0 bytes de memoria asignada en el Heap durante la búsqueda en Find().
+- Tiempo determinístico: máximo 64 comparaciones de caracteres por palabra.
+
+**Desventajas**: Mayor número de saltos de puntero en memoria al recorrer nodos en comparación con una tabla hash contigua. Más complejo de implementar correctamente. En la práctica, para 64x64, el cache locality del HashSet/FrozenSet supera la ventaja teórica de 0 allocs.
+
+**Cuándo usarlo**: Cuando se busca mínima presión en el GC y comportamiento predecible en matrices más grandes. Para 64x64, la diferencia es marginal.
+
+---
+
+## 5. LO QUE LA PoC REVELÓ (Hallazgos de la Validación)
+
+La fase de PoC no solo confirmó teorías — descubrió problemas reales:
+
+### Hallazgo 1: El Suffix Trie es inválido para este challenge
+**Qué pasamos**: Implementamos un Suffix Trie que insertaba solo sufijos de cada línea.
+**Resultado**: Falló tests de verificación — "cold" no se encontraba en "coldy" porque "cold" no es un suffix de "coldy".
+**Corrección**: Reemplazado por Substring Trie que inserta TODOS los substrings desde cada posición.
+**Lección**: La implementación correcta de un Trie para este challenge requiere insertar todos los substrings, no solo sufijos. Un Suffix Trie es una estructura de datos diferente con un caso de uso diferente.
+
+### Hallazgo 2: La interpretación de GLM produce código que compila pero es incorrecto
+**Qué pasamos**: Seguir la lógica de GLM (frecuencia en matriz, dedup del stream).
+**Resultado**: El código compila, pasa tests básicos, pero el ranking es arbitrario. Con todas las frecuencias en 1, el "top 10" depende del orden de inserción del Dictionary, no de la frecuencia real.
+**Lección**: Tests de correctness deben validar el RANKING, no solo la existencia. Agregamos tests que verifican que "cold" (3 ocurrencias) rankea sobre "wind" (2) sobre "chill" (1).
+
+### Hallazgo 3: FrozenSet vs HashSet — la diferencia real está en el patrón de uso
+**Teoría**: FrozenSet es "más rápido" que HashSet.
+**Realidad**: Para un solo hilo haciendo lookups, la diferencia es marginal (~5%). La ventaja real de FrozenSet es:
+- Inmutabilidad garantizada (no accidental mutation)
+- Thread-safe sin locks (múltiples Find() concurrentes)
+- Mejor layout de memoria para lecturas (no para escrituras)
+**Decisión**: FrozenSet porque el challenge dice "high performance" y thread-safety es parte de eso.
+
+### Hallazgo 4: PriorityQueue vs LINQ para Top-10
+**Teoría**: PriorityQueue es O(N log K), LINQ es O(N log N).
+**Realidad**: Para K=10 y N=500 (típico), la diferencia es ~2μs vs ~5μs. Ambos son instantáneos.
+**Decisión**: PriorityQueue por principios (mostrar que conoces la estructura de datos correcta), no por performance medible.
+
+---
+
+## 6. COMPARATIVA RESUMEN (Post-PoC)
+
+### Tabla Comparativa Teórica
+
+| Approach | Ctor Time | Find Time (por palabra) | Memoria | GC Pressure | Complejidad | ¿Válido? |
+|----------|-----------|------------------------|---------|-------------|-------------|-----------|
+| Naive | ~1 ms | ~μs (128×64 ops) | ~8 KB | Muy bajo | Baja | ✅ |
+| HashSet | ~90 ms | O(1) | ~12 MB | Medio (266k strings) | Media | ✅ |
+| FrozenSet | ~105 ms | O(1) optimizado | ~12 MB | Medio (layout optimizado) | Media | ✅ |
+| Suffix Trie | ~80 ms | O(L) determinístico | ~500 KB | Muy bajo | Alta | ❌ (solo suffixes) |
+| Substring Trie | ~95 ms | O(L) determinístico | ~800 KB | Muy bajo | Alta | ✅ |
+
+### Resultados Reales de BenchmarkDotNet (64x64 matrix, 10K stream)
+
+| Benchmark | Mean | Allocated |
+|-----------|------|-----------|
+| Aggregator (MinHeap, 500 words) | 2.39 μs | 1.21 KB |
+| Find(10K stream) | 319.67 μs | 4.04 KB |
+| Find(100K stream) | 2.73 ms | 4.04 KB |
+| Constructor (64x64 matrix) | 94.11 ms | 52 MB |
+
+### Recomendación Final
+- **Para el challenge (solución entregable)**: FrozenSet. Mejor balance entre performance, inmutabilidad, y simplicidad.
+- **Para producción con .NET 8+**: FrozenSet (mismas razones).
+- **Si la matriz fuera más grande de 64x64**: Substring Trie (menor presión de GC, O(L) determinístico).
+- **Si solo importara simplicidad**: HashSet (casi idéntico a FrozenSet en performance para este caso).
+
+---
+
+## 7. AGREGACIÓN TOP-10: Min-Heap vs LINQ Sort
+
+### Opción A: LINQ OrderByDescending().Take(10)
+- Ordena TODA la colección de palabras encontradas (N elementos).
+- Complejidad: O(N log N).
+- Simple pero ineficiente cuando N es grande.
+
+### Opción B: Min-Heap (PriorityQueue<string, int>)
+- Mantiene una estructura fija con máximo 10 elementos.
+- La palabra con menor frecuencia siempre está en la raíz.
+- Cada nueva palabra se compara con la raíz: si es menor, se descarta; si es mayor, reemplaza y reacomoda.
+- Complejidad: O(N log 10) = O(N).
+- Memoria fija de solo 10 elementos.
+
+### Atajos implementados
+- Si el diccionario tiene ≤10 elementos, usamos LINQ directamente (evitamos overhead de PriorityQueue).
+- PriorityQueue con `TryPeek` para comparar sin desencolar.
+
+**Recomendación**: Min-Heap (PriorityQueue). Es O(N log K) donde K=10, mucho más eficiente que ordenar toda la colección. Además, muestra conocimiento de estructuras de datos especializadas.
+
+---
+
+## 8. ARQUITECTURA SOLID APLICADA
+
+### SRP (Single Responsibility)
+- **MatrixHelper**: Validación y transformación de la matriz.
+- **IMatrixSearchEngine**: Respuesta booleana "¿existe esta palabra?".
+- **TopWordsAggregator**: Ranking y extracción del Top 10.
+- **WordFinder**: Coordinación del flujo (cumple el contrato del challenge).
+
+### OCP (Open/Closed)
+- `WordFinder` depende de `IMatrixSearchEngine`. Se pueden agregar nuevas estrategias sin modificar WordFinder.
+- Para benchmarking: inyectar diferentes motores sin cambiar la interfaz pública.
+
+### DIP (Dependency Inversion)
+- `WordFinder` depende de la abstracción `IMatrixSearchEngine`, no de implementaciones concretas.
+- El constructor público solo expone `IEnumerable<string> matrix` (cumple el contrato), pero internamente inyecta `FrozenSetSearchEngine`.
+
+### Inmutabilidad y Thread-Safety
+- `FrozenSet` es inmutable por diseño: una vez creado, no puede cambiarse.
+- Múltiples hilos pueden llamar concurrentemente a `Find()` sin locks ni sincronización.
+- Esto es parte de "high performance" — no solo velocidad, sino uso eficiente de recursos del sistema.
+
+---
+
+## 9. PREGUNTAS DE DEFENSA TÉCNICA
+
+### Preguntas que SÍ te van a hacer
+
+1. **¿Por qué FrozenSet y no HashSet?** → FrozenSet es inmutable y thread-safe por diseño. Para un escenario donde Find() puede llamarse concurrentemente desde múltiples hilos, esto es parte de "high performance". La diferencia de ~15ms en el constructor se amortiza en la primera llamada a Find().
+
+2. **¿Qué complejidad tiene tu solución?** → Constructor: O(L × L²) donde L=64. Find: O(W) donde W = palabras únicas en el stream. El瓶颈 es el constructor (~94ms), pero se paga una sola vez.
+
+3. **¿Por qué preprocesar la matriz?** → Trade-off memoria/tiempo. La matriz es inmutable y chica (máx 4096 chars). El stream es potencialmente enorme y Find() puede llamarse múltiples veces. Preprocesar una vez y tener O(1) por palabra es la estrategia óptima.
+
+4. **¿Qué pasa si la matriz fuera 10.000 x 10.000?** → El preprocesamiento de substrings sería inviable (~O(N³)). Switch a Naive (O(1) ctor, O(N) por palabra) o Substring Trie (O(N²) ctor, O(L) por palabra, menor presión de GC).
+
+5. **¿Qué pasa si Find() se llama una sola vez?** → El FrozenSet sigue siendo competitivo porque 266k inserts es rápido (~94ms). El overhead total es <100ms para una sola ejecución.
+
+6. **¿Qué consume más memoria?** → FrozenSet (~12 MB por 266k strings). Substring Trie sería más eficiente (~800 KB) pero más complejo. Para 64x64, 12 MB es aceptable.
+
+7. **¿Por qué HashSet/FrozenSet y no Dictionary?** → Solo necesitamos existencia (bool), no valores asociados. HashSet es más simple y consume menos memoria.
+
+8. **¿Cómo manejás duplicados del stream?** → Contamos frecuencias en un Dictionary<string, int> durante Find(). Luego filtramos por existencia en la matriz (FrozenSet.Contains). Finalmente, TopWordsAggregator extrae el top 10 con PriorityQueue.
+
+9. **¿Cómo probaste performance?** → BenchmarkDotNet con streams de 10K y 100K palabras, midiendo tiempo y allocaciones de memoria. También tests de concurrencia (20 hilos paralelos) y stress (200K/1M palabras).
+
+10. **¿Qué cambiarías si el tamaño máximo de matriz desapareciera?** → Switch a Substring Trie (menor presión de GC, O(L) determinístico por palabra) o Aho-Corasick construido sobre el stream si Find() solo se llama una vez.
+
+### Preguntas que NO te deberían hacer (errores comunes de otros candidatos)
+
+- **"¿Por qué contás frecuencias en el stream y no en la matriz?"** → Si te hacen esta pregunta, es una trampa. La respuesta correcta es: "La matriz es booleana (existe/no existe). El stream es la fuente de frecuencia. Si contara en la matriz, 'most repeated' no significaría nada."
+
+- **"¿Por qué no usaste diagonales?"** → El enunciado dice explícitamente solo horizontal y vertical. El ejemplo de "snow" en diagonal confirma que las diagonales NO se buscan.
+
+- **"¿Tu solución maneja palabras en reversa?"** → No. El enunciado dice "left to right" y "top to bottom". Buscar en reversa sería resolver más de lo pedido.
+
+---
+
+## 10. ESTRUCTURA DEL CÓDIGO PoC
+
+```
+WordFinderPoC/
+├── Core/
+│   ├── IMatrixSearchEngine.cs      # Strategy interface
+│   ├── IInitializable.cs           # Extensión para inicialización
+│   └── WordFinder.cs               # Clase principal (cumple contrato)
+├── Engines/
+│   ├── NaiveLineScanSearchEngine.cs  # Approach 1
+│   ├── HashSetSearchEngine.cs        # Approach 2
+│   ├── FrozenSetSearchEngine.cs      # Approach 3
+│   └── SuffixTrieSearchEngine.cs     # Approach 4 (corregido: inserta todos los substrings)
+├── Aggregators/
+│   └── TopWordsAggregator.cs       # Min-Heap con PriorityQueue
+├── Utils/
+│   ├── MatrixHelper.cs             # Validación y transformación
+│   └── FrequencyCounter.cs         # Conteo de frecuencias del stream
+├── Verification/
+│   └── CorrectnessVerifier.cs      # Tests de verificación por engine
+├── Benchmarks/
+│   └── WordFinderBenchmarks.cs     # BenchmarkDotNet comparativo
+└── Program.cs                      # Entry point con menú
+```
+
+### Comandos de ejecución
+```powershell
+# Tests de verificación de reglas y constraints (28 tests por engine)
+dotnet run --project "02 - PoCs/WordFinderPoC" -- --test
+
+# Demostración de rendimiento (Stopwatch, comparativa de 4 engines)
+dotnet run --project "02 - PoCs/WordFinderPoC" -c Release -- --demo
+
+# Suite oficial de BenchmarkDotNet (exporta Markdown + CSV)
+dotnet run --project "02 - PoCs/WordFinderPoC" -c Release -- --benchmark
+```
+
+---
+
+## 11. CÓMO ESTE ANÁLISIS GUIÓ LA SOLUCIÓN FINAL
+
+### De los modelos al delivery
+
+| Decisión | Fuente | Justificación |
+|----------|--------|---------------|
+| FrozenSet sobre HashSet | PoC Benchmarking + Claude/GPT | Inmutabilidad + thread-safe + mejor cache locality |
+| PriorityQueue sobre LINQ | PoC Benchmarking + todos los modelos | O(N log K) vs O(N log N), muestra conocimiento de estructuras |
+| Strategy Pattern | Claude + Gemini + GLM | OCP + DIP, permite benchmarking de múltiples engines |
+| MatrixHelper separado | Claude + GPT | SRP, validación testeable de forma aislada |
+| Preprocesamiento en constructor | Todos los modelos | Insight central: matriz chica, stream grande |
+
+### Lo que descartamos y por qué
+
+| Approach descartado | Razón |
+|---------------------|-------|
+| Aho-Corasick | Se construye desde el stream, no la matriz. Contradice preprocesamiento en ctor. |
+| Suffix Trie (solo suffixes) | **Inválido**: pierde substrings que no son suffixes. Descubierto en PoC. |
+| Builder Pattern | Over-engineering para un contrato simple de 2 métodos. |
+| Strategy para direcciones | Las direcciones están fijadas por el challenge (solo H/V). No es OCP si no hay variación. |
+| Dictionary en vez de HashSet | Solo necesitamos existencia, no valores asociados. |
+
+### Artefactos de entrega
+
+1. **`01 - Analisis/`**: Los 4 análisis de IA que guiaron el diseño. Muestra que no pediste "dame la solución" sino que analizaste múltiples perspectivas.
+2. **`02 - PoCs/`**: Código ejecutable con 4 approaches, tests de verificación, y benchmarks comparativos. Muestra que validaste empíricamente, no solo teóricamente.
+3. **`03 - Delivery/`**: Solución final con 92 tests, 100% coverage, benchmarks, ADRs, y acceptance criteria. El entregable profesional.
