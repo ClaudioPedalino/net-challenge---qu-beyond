@@ -6,7 +6,6 @@
 
 ## Test results
 TestResults/
-coverage.cobertura.xml
 *.coverage
 *.coveragexml
 

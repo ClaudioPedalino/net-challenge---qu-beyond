@@ -10,16 +10,15 @@
 - [`Tradeoffs comparison of AI analysis and clarify rules and contraints to follow`](02%20-%20PoCs/zero-prompt.md) 
 - [`Acceptance Criteria to build the delivery`](Acceptance_Criteria.md) 
 - [`Benchmark Report`](BenchmarkDotNet-report.md) 
-- [`Test Coverage Report`](coverage.cobertura.xml) 
-- [`👇🏼 Nice and lovely readme down below 👇🏼`](README.md)
+- [`Test Coverage Report (HTML)`](docs/coverage-report.html) — open in browser for a visual, clickable report
 
 ---
 
 **Main challenge**: Given a 64x64 character matrix and a large word stream, find the top 10 most frequent words from the stream that exist in the matrix (horizontally left-to-right or vertically top-to-bottom).
 
----
-
+-- [`👇🏼 Nice and lovely readme down below 👇🏼`](README.md)
 👇🏼 From here start the AI generated readme file... 👇🏼
+---
 
 ## Results
 
@@ -51,7 +50,8 @@ The challenge contains an ambiguous sentence that every candidate interprets dif
 ```
 ├── README.md                            ← You are here
 ├── Acceptance_Criteria.md               ← 54 acceptance criteria (all PASS)
-├── coverage.cobertura.xml               ← Code coverage report (100% lines)
+├── coverage-report.html                ← Visual code coverage report (open in browser)
+├── coverage.cobertura.xml               ← Raw coverage XML (gitignored, auto-generated)
 ├── BenchmarkDotNet-report.md            ← Benchmark results (Markdown)
 ├── BenchmarkDotNet-report.html          ← Benchmark results (HTML, open in browser)
 ├── BenchmarkDotNet-report.csv           ← Benchmark results (CSV)
