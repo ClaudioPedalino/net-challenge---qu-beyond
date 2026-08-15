@@ -10,7 +10,7 @@
 - [`Tradeoffs comparison of AI analysis and clarify rules and contraints to follow`](02%20-%20PoCs/zero-prompt.md) 
 - [`Acceptance Criteria to build the delivery`](Acceptance_Criteria.md) 
 - [`Benchmark Report`](BenchmarkDotNet-report.md) 
-- [`Test Coverage Report (HTML)`](docs/coverage-report.html) — open in browser for a visual, clickable report
+- [`Test Coverage Report (HTML)`](coverage-report.html) — open in browser for a visual, clickable report
 
 ---
 
