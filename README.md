@@ -6,11 +6,11 @@
 - **PoCs phase**: Based on that analysis, I requested a comparison of the pros and cons in light of the initial challenge and created some proof-of-concepts to evaluate the performance of 4 different approaches, since performance is one of the challenge's priorities. These can be found in the **"02 - PoCs"** folder.
 - **Delivery phase**: Based on the best option previously benchmarked, a deliverable was created, taking into account the constraints proposed in the challenge, along with its tests and benchmarks.
 
-**Key files**:
-- [`Tradeoffs comparison of AI analysis and clarify rules and contraints to follow`](02 - PoCs/zero-prompt.txt)
-- [`Acceptance Criteria to build the delivery`](Acceptance_Criteria.md)
-- [`Benchmark Report`](BenchmarkDotNet-report.md)
-- [`Test Coverage Report`](coverage.cobertura.xml)
+**Key files**: 
+- [`Tradeoffs comparison of AI analysis and clarify rules and contraints to follow`](02%20-%20PoCs/zero-prompt.md) 
+- [`Acceptance Criteria to build the delivery`](Acceptance_Criteria.md) 
+- [`Benchmark Report`](BenchmarkDotNet-report.md) 
+- [`Test Coverage Report`](coverage.cobertura.xml) 
 - [`👇🏼 Nice and lovely readme down below 👇🏼`](README.md)
 
 ---
