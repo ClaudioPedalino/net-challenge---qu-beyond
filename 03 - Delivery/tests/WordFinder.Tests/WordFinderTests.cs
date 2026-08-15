@@ -25,10 +25,13 @@ public class WordFinderTests
         var result = finder.Find(stream).ToArray();
 
         result.Should().HaveCount(3);
+        result[0].Should().Be("cold");   // cold: 3x in stream — highest frequency
+        result[1].Should().Be("wind");   // wind: 2x in stream
+        result[2].Should().Be("chill");  // chill: 1x in stream
         result.Should().Contain("cold");
         result.Should().Contain("wind");
         result.Should().Contain("chill");
-        result.Should().NotContain("snow");
+        result.Should().NotContain("snow"); // snow is diagonal-only — never indexed
     }
 
     [Fact]
@@ -532,6 +535,6 @@ public class WordFinderTests
             _matches = new HashSet<string>(matches, StringComparer.Ordinal);
         }
 
-        public bool Contains(string word) => _matches.Contains(word);
+        public bool Contains(string? word) => word is not null && _matches.Contains(word);
     }
 }

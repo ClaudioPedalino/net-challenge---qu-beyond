@@ -10,7 +10,10 @@ public interface IMatrixSearchEngine
     /// <summary>
     /// Checks whether the specified word exists in the matrix.
     /// </summary>
-    /// <param name="word">The word to search for. Must not be null or empty.</param>
-    /// <returns><see langword="true"/> if the word is found; otherwise, <see langword="false"/>.</returns>
-    bool Contains(string word);
+    /// <param name="word">The word to search for.</param>
+    /// <returns>
+    /// <see langword="true"/> if the word is found in the matrix;
+    /// <see langword="false"/> if the word is null, empty, longer than the maximum matrix dimension, or not present.
+    /// </returns>
+    bool Contains(string? word);
 }

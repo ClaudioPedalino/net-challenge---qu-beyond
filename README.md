@@ -39,7 +39,7 @@ The challenge contains an ambiguous sentence that every candidate interprets dif
 ├── .gitignore
 ├── 01 - Analisis/                       ← AI model analyses (Claude, Gemini, GLM, GPT)
 ├── 02 - PoCs/                           ← Proof of Concept with 4 approaches
-│   ├── 02 - metaprompt.txt             ← Full analysis, trade-offs, and defense prep
+│   ├── zero-prompt.txt                  ← Full analysis, trade-offs, and defense prep
 │   └── WordFinderPoC/                   ← Executable PoC code
 │       ├── Engines/                     ← Naive, HashSet, FrozenSet, SuffixTrie
 │       ├── Verification/               ← 28 correctness tests per engine
@@ -126,12 +126,12 @@ TopWordsAggregator.ExtractTopK()      → string[] (top 10 by frequency)
 
 | Benchmark | Mean | Allocated |
 |-----------|------|-----------|
-| Aggregator (MinHeap, 500 words) | 2.39 μs | 1.21 KB |
-| Find(10K stream) | 319.67 μs | 4.04 KB |
-| Find(100K stream) | 2.73 ms | 4.04 KB |
-| Constructor (64x64 matrix) | 94.11 ms | 52 MB |
+| Aggregator (MinHeap, 500 words) | 4.83 μs | 1.21 KB |
+| Find(10K stream) | 366.57 μs | 4.04 KB |
+| Find(100K stream) | 3.80 ms | 4.04 KB |
+| Constructor (64x64 matrix) | 150.50 ms | 52 MB |
 
-**Key finding**: The constructor (~94ms) is the bottleneck, but it runs once. After that, `Find()` processes 10K words in ~320μs and 100K words in ~2.7ms. For a word stream of 1 million words, `Find()` would complete in ~27ms.
+**Key finding**: The constructor (~150ms) is the bottleneck, but it runs once. After that, `Find()` processes 10K words in ~367μs and 100K words in ~3.8ms. For a word stream of 1 million words, `Find()` would complete in ~38ms.
 
 Full report: [`BenchmarkDotNet-report.md`](BenchmarkDotNet-report.md) | [`BenchmarkDotNet-report.html`](BenchmarkDotNet-report.html)
 
@@ -191,7 +191,7 @@ These are conscious design decisions, not oversights:
 2. **Memory usage**: The FrozenSet holds ~266k unique strings (~12MB). This is acceptable for the challenge constraints but would need reconsideration for memory-constrained environments.
 3. **No diagonal search**: By design, not limitation. The challenge explicitly specifies only horizontal and vertical directions. The visual example confirms "snow" (diagonal) is not found.
 4. **Case-sensitive comparison**: Chosen as the safer default. Case-insensitive support would require a different `StringComparer` in the FrozenSet.
-5. **Constructor cost (~94ms)**: Paid once per instance. If `Find()` were only called once, a Naive approach might be more appropriate. The design assumes multiple `Find()` calls amortize the constructor cost.
+5. **Constructor cost (~150ms)**: Paid once per instance. If `Find()` were only called once, a Naive approach might be more appropriate. The design assumes multiple `Find()` calls amortize the constructor cost.
 
 ## Code Quality
 
@@ -214,4 +214,4 @@ This solution was not produced by asking AI to generate code. It followed a stru
 
 3. **Delivery phase** (`03 - Delivery/`): The final solution was built with the architecture and approach validated in the PoC, with comprehensive tests, benchmarks, and documentation.
 
-The metaprompt (`02 - PoCs/02 - metaprompt.txt`) documents the complete analysis, trade-offs, and defense preparation — including questions you should be prepared to answer in an interview.
+The analysis file (`02 - PoCs/zero-prompt.txt`) documents the complete analysis, trade-offs, and defense preparation — including questions you should be prepared to answer in an interview.

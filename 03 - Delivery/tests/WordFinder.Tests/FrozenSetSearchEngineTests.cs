@@ -58,7 +58,7 @@ public class FrozenSetSearchEngineTests
     {
         var engine = new FrozenSetSearchEngine(TestMatrix);
 
-        engine.Contains(null!).Should().BeFalse();
+        engine.Contains(null).Should().BeFalse();
     }
 
     [Fact]

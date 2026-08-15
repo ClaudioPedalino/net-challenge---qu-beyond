@@ -27,7 +27,7 @@ Use `FrozenSet<string>` from `System.Collections.Frozen` (.NET 8+) to store all 
 
 2. **Immutable by design**: After construction, the set cannot be modified. This provides thread-safety without locks — critical for concurrent `Find()` calls (verified with 20-thread concurrency tests).
 
-3. **One-time construction cost**: The matrix is at most 64x64, producing ~65K unique substrings in the worst case. Construction takes ~94ms on a Ryzen 7 7730U. This is acceptable because the constructor runs once, and `Find()` is called many times.
+3. **One-time construction cost**: The matrix is at most 64x64, producing ~65K unique substrings in the worst case. Construction takes ~150ms on a Ryzen 7 7730U. This is acceptable because the constructor runs once, and `Find()` is called many times.
 
 4. **Better than HashSet**: `HashSet` requires `ConcurrentHashSet` or external locking for thread-safety. `FrozenSet` needs neither.
 

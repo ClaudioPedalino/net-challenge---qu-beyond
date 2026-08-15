@@ -236,10 +236,10 @@ La fase de PoC no solo confirmó teorías — descubrió problemas reales:
 
 | Benchmark | Mean | Allocated |
 |-----------|------|-----------|
-| Aggregator (MinHeap, 500 words) | 2.39 μs | 1.21 KB |
-| Find(10K stream) | 319.67 μs | 4.04 KB |
-| Find(100K stream) | 2.73 ms | 4.04 KB |
-| Constructor (64x64 matrix) | 94.11 ms | 52 MB |
+| Aggregator (MinHeap, 500 words) | 4.83 μs | 1.21 KB |
+| Find(10K stream) | 366.57 μs | 4.04 KB |
+| Find(100K stream) | 3.80 ms | 4.04 KB |
+| Constructor (64x64 matrix) | 150.50 ms | 52 MB |
 
 ### Recomendación Final
 - **Para el challenge (solución entregable)**: FrozenSet. Mejor balance entre performance, inmutabilidad, y simplicidad.

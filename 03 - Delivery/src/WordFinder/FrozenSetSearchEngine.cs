@@ -37,7 +37,7 @@ public sealed class FrozenSetSearchEngine : IMatrixSearchEngine
     }
 
     /// <inheritdoc/>
-    public bool Contains(string word)
+    public bool Contains(string? word)
     {
         if (string.IsNullOrEmpty(word) || word.Length > MatrixHelper.MaxDimension)
         {
