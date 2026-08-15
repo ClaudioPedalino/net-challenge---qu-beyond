@@ -1,6 +1,23 @@
 # Word Finder — Developer Challenge Solution
 
-> **Challenge**: Given a 64x64 character matrix and a large word stream, find the top 10 most frequent words from the stream that exist in the matrix (horizontally left-to-right or vertically top-to-bottom).
+> ## 🫶🏼 Dev notes
+> -- **Analyze** My first step was to analyze the challenge using four different models (Claude Sonnet, Gemini 3.6 flash, GLM 4.7, GPT luna) to understand the problem and explore some potential solutions. You can find the analysis in the **“01 - Analysis"** folder
+> -- **PoCs phase** Based on that analysis, I requested a comparison of the pros and cons in light of the initial challenge and created some proof-of-concepts to evaluate the performance of 4 different approaches, since performance is one of the challenge’s priorities. These can be found in the **“02 - PoCs”** folder.
+> -- **Delivery phase**, based on the best option previusly benchmarked a deliverable was created, taking into account the constraints proposed in the challenge, along with its tests and benchmarks.
+
+> Key files:
+- [`Benchmark Report`](BenchmarkDotNet-report.html) 
+- [`Test Coverage Report`](coverage.cobertura.xml) 
+- [`Tradeoffs commparsion of AI analasys`](02 - PoCs\zero-prompt.txt) 
+- [`👇🏼Nice and lovely readme down below👇🏼`](README.md) 
+---
+
+> **Main challenge**: Given a 64x64 character matrix and a large word stream, find the top 10 most frequent words from the stream that exist in the matrix (horizontally left-to-right or vertically top-to-bottom).
+> **Rules and contraints**: 
+
+---
+---
+👇🏼 From here start the IA generated readme file...👇🏼
 
 ## Results
 
@@ -37,7 +54,7 @@ The challenge contains an ambiguous sentence that every candidate interprets dif
 ├── BenchmarkDotNet-report.html          ← Benchmark results (HTML, open in browser)
 ├── BenchmarkDotNet-report.csv           ← Benchmark results (CSV)
 ├── .gitignore
-├── 01 - Analisis/                       ← AI model analyses (Claude, Gemini, GLM, GPT)
+├── 01 - Analysis/                       ← AI model analyses (Claude, Gemini, GLM, GPT)
 ├── 02 - PoCs/                           ← Proof of Concept with 4 approaches
 │   ├── zero-prompt.txt                  ← Full analysis, trade-offs, and defense prep
 │   └── WordFinderPoC/                   ← Executable PoC code
@@ -203,15 +220,3 @@ These are conscious design decisions, not oversights:
 - SonarQube-compatible (0 code smells, 0 bugs, 0 vulnerabilities)
 
 Full report: [`Acceptance_Criteria.md`](Acceptance_Criteria.md)
-
-## Research & Decision Process
-
-This solution was not produced by asking AI to generate code. It followed a structured process:
-
-1. **Analysis phase** (`01 - Analisis/`): The challenge was analyzed by 4 different AI models (Claude, Gemini, GLM, GPT). Each analysis was critically evaluated — including identifying GLM's critical misinterpretation of the frequency counting rule.
-
-2. **PoC phase** (`02 - PoCs/`): 4 search approaches were implemented, tested, and benchmarked. This phase discovered the Suffix Trie's correctness bug and validated that FrozenSet provides the best balance of performance, immutability, and simplicity.
-
-3. **Delivery phase** (`03 - Delivery/`): The final solution was built with the architecture and approach validated in the PoC, with comprehensive tests, benchmarks, and documentation.
-
-The analysis file (`02 - PoCs/zero-prompt.txt`) documents the complete analysis, trade-offs, and defense preparation — including questions you should be prepared to answer in an interview.
